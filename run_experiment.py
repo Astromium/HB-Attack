@@ -1,9 +1,10 @@
 import argparse
 from data_generator import DataGenerator
 from hyperband import Hyperband
+from moehb import MOEHB
 from evaluators import BotnetEvaluator, LCLDEvaluator, URLEvaluator
 from sampler import Sampler
-from objective_calculator import calculate_metrics
+from objective_calculator import calculate_metrics, calculate_metrics_moehb
 import tensorflow as tf
 import joblib
 import os 
@@ -24,6 +25,8 @@ if __name__ == '__main__':
     parser.add_argument('-dataset', required=True)
     parser.add_argument('-attack', required=True)
     parser.add_argument('-batch', default=10)
+    parser.add_argument('-n_gen', default=100)
+    parser.add_argument('-pop_size', default=100)
 
     args = parser.parse_args()
 
@@ -32,6 +35,8 @@ if __name__ == '__main__':
     R = int(args.R)
     eps = float(args.eps)
     eta = int(args.eta)
+    n_gen = int(args.n_gen)
+    pop_size = int(args.pop_size)
 
     data_gen = DataGenerator()
     x, y, mutables, features_min_max, int_features, feature_names, constraints = data_gen.get_dataset(dataset=dataset)
@@ -79,4 +84,17 @@ if __name__ == '__main__':
         metrics = calculate_metrics(data=x[:BATCH_SIZE], scores=scores, candidates=candidates, scaler=scaler, eps=eps, tolerance=tolerance)
 
         print(f'metrics {metrics}')
+    
+    elif atk == 'moehb':
+        hb_init = {'objective': evaluator, 'classifier_path':classifier_path, 'x':x[:BATCH_SIZE], 'y':y[:BATCH_SIZE], 'sampler':sampler,
+                        'eps':eps, 'dimensions':dimensions, 'max_configuration_size':dimensions-1, 'R':R, 'downsample':eta, 'distance':2, 'seed':seed}
+        hb_gen = {'scaler':scaler, 'dataset':dataset, 'mutables':mutables, 'features_min_max':features_min_max, 'int_features':int_features}
+
+        moehb = MOEHB(hb_init=hb_init, hb_gen=hb_gen, n_gen=n_gen, pop_size=pop_size, constraints=constraints, tolerance=tolerance, feature_names=feature_names, history=None)
+        solutions , scores = moehb.run()
+
+        metrics = calculate_metrics_moehb(data=x[:BATCH_SIZE], scores=scores, eps=eps, tolerance=tolerance)
+
+        print(f'metrics {metrics}')
+
 

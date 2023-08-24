@@ -29,3 +29,25 @@ def calculate_metrics(data, scores, candidates, scaler, eps, tolerance):
 
     total = len(data)
     return {'C': (C / total) * 100, 'M': (M / total) * 100, 'C&M': (CM / total) * 100}
+
+
+def calculate_metrics_moehb(data, scores, eps, tolerance):
+    C = 0
+    M = 0
+    CM = 0
+    for i, x in enumerate(data):
+        score = scores[i]
+        preds = np.array([obj[0] for obj in score])
+        distances = np.array([obj[1] for obj in score])
+        violations = np.array([obj[2] for obj in score])
+        
+        distance_respected = distances <= eps
+        constraints_respected = violations <= tolerance
+        misclassification = preds < 0.5
+
+        M += int(np.any(distance_respected * misclassification))
+        C += int(np.any(constraints_respected * distance_respected))
+        CM += int(np.any(distance_respected * misclassification * constraints_respected))
+
+    total = len(data)
+    return {'C': (C / total) * 100, 'M': (M / total) * 100, 'C&M': (CM / total) * 100}
