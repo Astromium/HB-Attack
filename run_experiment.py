@@ -3,9 +3,12 @@ from data_generator import DataGenerator
 from hyperband import Hyperband
 from moehb import MOEHB
 from evaluators import BotnetEvaluator, LCLDEvaluator, URLEvaluator
+from utils.tensorflow_classifier import LcldTensorflowClassifier
+from sklearn.pipeline import Pipeline
 from sampler import Sampler
 from objective_calculator import calculate_metrics, calculate_metrics_moehb
 import tensorflow as tf
+import numpy as np
 import joblib
 import os 
 import warnings
@@ -65,6 +68,13 @@ if __name__ == '__main__':
         scaler = joblib.load(scaler_path)
         evaluator = LCLDEvaluator(constraints=constraints, scaler=scaler, feature_names=feature_names)
         tolerance = 0.01
+
+        model = LcldTensorflowClassifier(tf.keras.models.load_model(classifier_path))
+        model_pipeline = Pipeline(steps=[('preprocessing', scaler), ('model', model)])
+        preds = model_pipeline.predict_proba(x)
+        classes = np.argmax(preds, axis=1)
+        to_keep = np.where(classes == 1)[0]
+        x, y = x[to_keep], y[to_keep]
 
     # Parameters 
 
