@@ -106,6 +106,8 @@ class MOEHB():
             return all_solutions, all_objectives
 
         else:
+            all_solutions = []
+            all_objectives = []
             configs, scores = self.history
             for i in tqdm(range(len(x)), total=len(x)):
                 config = configs[i]
