@@ -31,6 +31,10 @@ class MOEHB():
             # No results from prior Hyperband execution 
             hb = Hyperband(**self.hb_init)
             scores , configs, candidates = hb.generate(**self.hb_gen)
+
+            np.save('./configs', np.array(configs))
+            np.save('./scores', np.array(scores))
+
             # Extract parameters 
             dataset = self.hb_gen['dataset']
             scaler = self.hb_gen['scaler']
