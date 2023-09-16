@@ -9,7 +9,7 @@ import os
 import math
 
 
-print(f'Hello {os.getpid()} from Hyperband')
+# print(f'Hello {os.getpid()} from Hyperband')
 
 
 def run_worker(args):
@@ -66,8 +66,6 @@ class Hyperband():
             for i in reversed(range(s_max + 1))
         ]
 
-       
-
         results = Parallel(n_jobs=s_max+1, verbose=0, backend='multiprocessing',
                            prefer='processes')(delayed(run_worker)(params[i]) for i in range(s_max + 1))
         global_scores = []
@@ -86,5 +84,4 @@ class Hyperband():
             global_configs.append(configs)
             global_candidates.append(candidates)
 
-        
         return global_scores, global_configs, global_candidates

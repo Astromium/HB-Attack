@@ -13,6 +13,7 @@ from pymoo.operators.sampling.rnd import FloatRandomSampling
 from pymoo.optimize import minimize
 from tqdm import tqdm
 import numpy as np
+import pickle
 
 
 class MOEHB():
@@ -54,8 +55,10 @@ class MOEHB():
             scores, configs, candidates = hb.generate(**self.hb_gen)
 
             # save for future tests
-            np.save('./scores', np.array(scores))
-            np.save('./configs', np.array(configs))
+            with open('./configs', 'wb') as f:
+                pickle.dump(configs, f)
+            with open('./scores', 'wb') as f:
+                pickle.dump(scores, f)
 
             all_solutions = []
             all_objectives = []
@@ -113,7 +116,7 @@ class MOEHB():
                 config = configs[i]
                 score = scores[i]
                 fronts = fast_non_dominated_sort.fast_non_dominated_sort(
-                    score)
+                    np.array(score))
                 best_config = config[fronts[0][0]]
 
                 print(f'Starting Perturbation Search for Example {i}')
