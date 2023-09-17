@@ -28,8 +28,8 @@ if __name__ == '__main__':
     parser.add_argument('-dataset', required=True)
     parser.add_argument('-attack', required=True)
     parser.add_argument('-batch', default=10)
-    parser.add_argument('-n_gen', default=100)
-    parser.add_argument('-pop_size', default=100)
+    parser.add_argument('-n_gen', default=300)
+    parser.add_argument('-pop_size', default=150)
     parser.add_argument('-configs_path', default=None)
     parser.add_argument('-scores_path', default=None)
 
@@ -61,6 +61,7 @@ if __name__ == '__main__':
         scaler = joblib.load(scaler_path)
         evaluator = URLEvaluator(constraints=constraints, scaler=scaler)
         tolerance = 0.0001
+        x, y = x[:50], y[:50]
     elif dataset == "botnet":
         scaler_path = "./ressources/custom_botnet_scaler.joblib"
         classifier_path = "./ressources/model_botnet.h5"
@@ -98,6 +99,11 @@ if __name__ == '__main__':
         scores, configurations, candidates = hb.generate(
             scaler=scaler, dataset=dataset, mutables=mutables, features_min_max=features_min_max, int_features=int_features)
 
+        with open('./configs', 'wb') as f:
+            pickle.dump(configurations, f)
+        with open('./scores', 'wb') as f:
+            pickle.dump(scores, f)
+
         # for i in range(len(scores)):
         #     print(f'scores for example {i} : {scores[i]}')
 
@@ -120,6 +126,11 @@ if __name__ == '__main__':
             with open(configs_path, 'rb') as f:
                 configs = pickle.load(f)
             history = (configs, np.array(scores))
+            with open('./configs', 'rb') as f:
+                configs = pickle.load(f)
+            with open('./scores', 'rb') as f:
+                scores = pickle.load(f)
+            history = (configs, scores)
 
         moehb = MOEHB(hb_init=hb_init, hb_gen=hb_gen, n_gen=n_gen, pop_size=pop_size,
                       constraints=constraints, tolerance=tolerance, feature_names=feature_names, history=history)

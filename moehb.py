@@ -116,7 +116,7 @@ class MOEHB():
                 config = configs[i]
                 score = scores[i]
                 fronts = fast_non_dominated_sort.fast_non_dominated_sort(
-                    score)
+                    np.array(score))
                 best_config = config[fronts[0][0]]
 
                 print(f'Starting Perturbation Search for Example {i}')

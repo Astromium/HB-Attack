@@ -123,10 +123,10 @@ class AdversarialProblem(Problem):
         obj_constraints = self._calculate_constraints(x_adv_fixed)
         g1 = obj_distance - 0.9*self.eps
         g2 = obj_misclassify - 0.5
-        g3 = obj_constraints - self.tolerance
+        g3 = obj_constraints - 0.9*self.tolerance
 
         F = [obj_misclassify, obj_distance, obj_constraints]
-        G = [g1, g2, g3]
+        G = [g2, g1, g3]
 
         # --- Output
         out["F"] = np.column_stack(F)
