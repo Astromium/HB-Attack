@@ -10,12 +10,12 @@ from objective_calculator import calculate_metrics, calculate_metrics_moehb
 import tensorflow as tf
 import numpy as np
 import joblib
-import os 
+import os
 import warnings
-#tf.compat.v1.disable_eager_execution()
+import pickle
+# tf.compat.v1.disable_eager_execution()
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 warnings.filterwarnings(action='ignore')
-
 
 
 if __name__ == '__main__':
@@ -30,6 +30,8 @@ if __name__ == '__main__':
     parser.add_argument('-batch', default=10)
     parser.add_argument('-n_gen', default=100)
     parser.add_argument('-pop_size', default=100)
+    parser.add_argument('-configs_path', default=None)
+    parser.add_argument('-scores_path', default=None)
 
     args = parser.parse_args()
 
@@ -40,9 +42,12 @@ if __name__ == '__main__':
     eta = int(args.eta)
     n_gen = int(args.n_gen)
     pop_size = int(args.pop_size)
+    configs_path = args.configs_path
+    scores_path = args.scores_path
 
     data_gen = DataGenerator()
-    x, y, mutables, features_min_max, int_features, feature_names, constraints = data_gen.get_dataset(dataset=dataset)
+    x, y, mutables, features_min_max, int_features, feature_names, constraints = data_gen.get_dataset(
+        dataset=dataset)
 
     scaler_path = None
     scaler = None
@@ -60,23 +65,27 @@ if __name__ == '__main__':
         scaler_path = "./ressources/custom_botnet_scaler.joblib"
         classifier_path = "./ressources/model_botnet.h5"
         scaler = joblib.load(scaler_path)
-        evaluator = BotnetEvaluator(constraints=constraints, scaler=scaler, feature_names=feature_names)
+        evaluator = BotnetEvaluator(
+            constraints=constraints, scaler=scaler, feature_names=feature_names)
         tolerance = 0.001
     elif dataset == "lcld":
         scaler_path = "./ressources/lcld_preprocessor.joblib"
         classifier_path = "./ressources/custom_lcld_model.h5"
         scaler = joblib.load(scaler_path)
-        evaluator = LCLDEvaluator(constraints=constraints, scaler=scaler, feature_names=feature_names)
+        evaluator = LCLDEvaluator(
+            constraints=constraints, scaler=scaler, feature_names=feature_names)
         tolerance = 0.01
 
-        model = LcldTensorflowClassifier(tf.keras.models.load_model(classifier_path))
-        model_pipeline = Pipeline(steps=[('preprocessing', scaler), ('model', model)])
+        model = LcldTensorflowClassifier(
+            tf.keras.models.load_model(classifier_path))
+        model_pipeline = Pipeline(
+            steps=[('preprocessing', scaler), ('model', model)])
         preds = model_pipeline.predict_proba(x)
         classes = np.argmax(preds, axis=1)
         to_keep = np.where(classes == 1)[0]
         x, y = x[to_keep], y[to_keep]
 
-    # Parameters 
+    # Parameters
 
     dimensions = len(mutables)
     BATCH_SIZE = x.shape[0] if int(args.batch) == -1 else int(args.batch)
@@ -85,26 +94,40 @@ if __name__ == '__main__':
 
     if atk == 'hyperband':
         hb = Hyperband(objective=evaluator, classifier_path=classifier_path, x=x[:BATCH_SIZE], y=y[:BATCH_SIZE], sampler=sampler,
-                        eps=eps, dimensions=dimensions, max_configuration_size=dimensions-1, R=R, downsample=eta, distance=2, seed=seed)
-        scores, configurations, candidates = hb.generate(scaler=scaler, dataset=dataset, mutables=mutables, features_min_max=features_min_max, int_features=int_features)
+                       eps=eps, dimensions=dimensions, max_configuration_size=dimensions-1, R=R, downsample=eta, distance=2, seed=seed)
+        scores, configurations, candidates = hb.generate(
+            scaler=scaler, dataset=dataset, mutables=mutables, features_min_max=features_min_max, int_features=int_features)
 
         # for i in range(len(scores)):
         #     print(f'scores for example {i} : {scores[i]}')
 
-        metrics = calculate_metrics(data=x[:BATCH_SIZE], scores=scores, candidates=candidates, scaler=scaler, eps=eps, tolerance=tolerance)
+        metrics = calculate_metrics(
+            data=x[:BATCH_SIZE], scores=scores, candidates=candidates, scaler=scaler, eps=eps, tolerance=tolerance)
 
         print(f'metrics {metrics}')
-    
+
     elif atk == 'moehb':
-        hb_init = {'objective': evaluator, 'classifier_path':classifier_path, 'x':x[:BATCH_SIZE], 'y':y[:BATCH_SIZE], 'sampler':sampler,
-                        'eps':eps, 'dimensions':dimensions, 'max_configuration_size':dimensions-1, 'R':R, 'downsample':eta, 'distance':2, 'seed':seed}
-        hb_gen = {'scaler':scaler, 'dataset':dataset, 'mutables':mutables, 'features_min_max':features_min_max, 'int_features':int_features}
+        hb_init = {'objective': evaluator, 'classifier_path': classifier_path, 'x': x[:BATCH_SIZE], 'y': y[:BATCH_SIZE], 'sampler': sampler,
+                   'eps': eps, 'dimensions': dimensions, 'max_configuration_size': dimensions-1, 'R': R, 'downsample': eta, 'distance': 2, 'seed': seed}
+        hb_gen = {'scaler': scaler, 'dataset': dataset, 'mutables': mutables,
+                  'features_min_max': features_min_max, 'int_features': int_features}
 
-        moehb = MOEHB(hb_init=hb_init, hb_gen=hb_gen, n_gen=n_gen, pop_size=pop_size, constraints=constraints, tolerance=tolerance, feature_names=feature_names, history=None)
-        solutions , scores = moehb.run()
+        history = None
 
-        metrics = calculate_metrics_moehb(data=x[:BATCH_SIZE], scores=scores, eps=eps, tolerance=tolerance)
+        if configs_path and scores_path:
+            with open(scores_path, 'rb') as f:
+                scores = pickle.load(f)
+            with open(configs_path, 'rb') as f:
+                configs = pickle.load(f)
+            history = (configs, np.array(scores))
+
+        moehb = MOEHB(hb_init=hb_init, hb_gen=hb_gen, n_gen=n_gen, pop_size=pop_size,
+                      constraints=constraints, tolerance=tolerance, feature_names=feature_names, history=history)
+        solutions, scores = moehb.run()
+
+        metrics = calculate_metrics_moehb(
+            data=x[:BATCH_SIZE], scores=scores, eps=eps, tolerance=tolerance)
 
         print(f'metrics {metrics}')
-
-
+        with open('./metrics.pkl', 'wb') as f:
+            pickle.dump(metrics, f)
