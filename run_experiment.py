@@ -57,11 +57,11 @@ if __name__ == '__main__':
 
     if dataset == 'url':
         scaler_path = "./ressources/baseline_scaler.joblib"
-        classifier_path = "./ressources/baseline_nn.model"
+        classifier_path = "./ressources/model_url.h5"
         scaler = joblib.load(scaler_path)
         evaluator = URLEvaluator(constraints=constraints, scaler=scaler)
         tolerance = 0.0001
-        x, y = x[:50], y[:50]
+        # x, y = x[:-1], y[:-1]
     elif dataset == "botnet":
         scaler_path = "./ressources/custom_botnet_scaler.joblib"
         classifier_path = "./ressources/model_botnet.h5"
@@ -98,6 +98,8 @@ if __name__ == '__main__':
                        eps=eps, dimensions=dimensions, max_configuration_size=dimensions-1, R=R, downsample=eta, distance=2, seed=seed)
         scores, configurations, candidates = hb.generate(
             scaler=scaler, dataset=dataset, mutables=mutables, features_min_max=features_min_max, int_features=int_features)
+
+        np.save('./candidates', np.array(candidates))
 
         with open('./configs', 'wb') as f:
             pickle.dump(configurations, f)

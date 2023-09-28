@@ -41,6 +41,7 @@ def calculate_metrics_moehb(data, scores, eps, tolerance):
     CM = 0
     for i, x in enumerate(data):
         score = scores[i]
+        # print(f'scores {i} : {score}')
         preds = np.array([obj[0] for obj in score])
         distances = np.array([obj[1] for obj in score])
         violations = np.array([obj[2] for obj in score])
@@ -50,6 +51,7 @@ def calculate_metrics_moehb(data, scores, eps, tolerance):
         misclassification = preds < 0.5
 
         M += int(np.any(distance_respected * misclassification))
+
         C += int(np.any(constraints_respected * distance_respected))
         CM += int(np.any(distance_respected *
                   misclassification * constraints_respected))
