@@ -104,8 +104,11 @@ class BotnetEvaluator(Evaluator):
         adversarials = np.array([self.process_one(
             p, x, configuration, distance, eps, features_min_max, int_features) for p in perturbations])
         preds = classifier.predict_proba(adversarials)[:, y]
-        violations = self.constraint_executor.execute(adversarials)
-        scores = [[p, v] for p, v in zip(preds, violations)]
+        if self.constraints:
+            violations = self.constraint_executor.execute(adversarials)
+            scores = [[p, v] for p, v in zip(preds, violations)]
+        else:
+            scores = [[p, 1.0] for p in preds]
 
         fronts = fast_non_dominated_sort.fast_non_dominated_sort(
             np.array(scores))
@@ -157,8 +160,7 @@ class LCLDEvaluator(Evaluator):
             violations = self.constraint_executor.execute(adversarials)
             scores = [[p, v] for p, v in zip(preds, violations)]
         else:
-            scores = preds
-
+            scores = [[p, 1.0] for p in preds]
         fronts = fast_non_dominated_sort.fast_non_dominated_sort(
             np.array(scores))
         return scores[fronts[0][0]], adversarials[fronts[0][0]]

@@ -67,14 +67,14 @@ if __name__ == '__main__':
         classifier_path = "./ressources/model_botnet.h5"
         scaler = joblib.load(scaler_path)
         evaluator = BotnetEvaluator(
-            constraints=constraints, scaler=scaler, feature_names=feature_names)
+            constraints=None, scaler=scaler, feature_names=feature_names)
         tolerance = 0.001
     elif dataset == "lcld":
         scaler_path = "./ressources/lcld_preprocessor.joblib"
         classifier_path = "./ressources/custom_lcld_model.h5"
         scaler = joblib.load(scaler_path)
         evaluator = LCLDEvaluator(
-            constraints=constraints, scaler=scaler, feature_names=feature_names)
+            constraints=None, scaler=scaler, feature_names=feature_names)
         tolerance = 0.01
 
         model = LcldTensorflowClassifier(
