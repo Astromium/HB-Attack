@@ -98,6 +98,8 @@ if __name__ == '__main__':
                        eps=eps, dimensions=dimensions, max_configuration_size=dimensions-1, R=R, downsample=eta, distance=2, seed=seed)
         scores, configurations, candidates = hb.generate(
             scaler=scaler, dataset=dataset, mutables=mutables, features_min_max=features_min_max, int_features=int_features)
+        
+        np.save('./candidates.npy', np.array(candidates))
 
         with open('./configs', 'wb') as f:
             pickle.dump(configurations, f)
