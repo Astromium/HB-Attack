@@ -71,9 +71,7 @@ class Hyperband():
         global_scores = []
         global_configs = []
         global_candidates = []
-        global_history = []
-        global_misclassifs = []
-        global_viols = []
+
         for i in range(self.x.shape[0]):
             scores, configs, candidates = [], [], []
             for th in results:

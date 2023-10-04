@@ -55,11 +55,15 @@ class URLEvaluator(Evaluator):
             adv = fix_feature_types(
                 perturbation=perturbation, adv=adv, int_features=int_features, configuration=configuration)
 
-            pred = classifier.predict_proba(adv[np.newaxis, :])[0][y]
-            violations = self.constraint_executor.execute(adv[np.newaxis, :])[
-                0]
-            scores[i] = [pred, violations]
+            # pred = classifier.predict_proba(adv[np.newaxis, :])[0][y]
+            # violations = self.constraint_executor.execute(adv[np.newaxis, :])[0]
+            # scores[i] = [pred, violations]
             adversarials[i] = np.copy(adv)
+
+        preds = classifier.predict_proba(np.array(adversarials))[:, y]
+        violations = self.constraint_executor.execute(np.array(adversarials))
+
+        scores = [[p, v] for p, v in zip(preds, violations)]
 
         fronts = fast_non_dominated_sort.fast_non_dominated_sort(
             np.array(scores))

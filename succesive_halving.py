@@ -59,12 +59,15 @@ class SuccessiveHalving():
         self.classifier_path = classifier_path
         if dataset == 'url':
             model = TensorflowClassifier(load_model(self.classifier_path))
+            # model = wrap_model(load_model(self.classifier_path),
+            #                    self.x, model_task="classification")
         elif dataset == 'lcld':
             model = LcldTensorflowClassifier(load_model(self.classifier_path))
         elif dataset == 'botnet':
             model = wrap_model(
-            load_model(self.classifier_path), self.x, model_task="classification")
-        self.classifier = Pipeline(steps=[('preprocessing', self.scaler), ('model', model)])
+                load_model(self.classifier_path), self.x, model_task="classification")
+        self.classifier = Pipeline(
+            steps=[('preprocessing', self.scaler), ('model', model)])
 
     def process_one(self, candidate, idx, configuration, budget):
         new_score, new_candidate = self.objective.evaluate(
@@ -96,7 +99,6 @@ class SuccessiveHalving():
             mutables_mask=self.mutables,
             seed=self.seed
         )
-  
 
         for i in range(self.hyperband_bracket + 1):
             budget = self.bracket_budget * pow(self.downsample, i)
@@ -108,7 +110,6 @@ class SuccessiveHalving():
                 int(len(scores) / self.downsample), 1)]
             configurations = [configurations[j] for j in top_indices]
             candidates = [candidates[j] for j in top_indices]
-            
 
         return (scores, configurations, candidates)
 
@@ -127,7 +128,6 @@ class SuccessiveHalving():
                 mutables_mask=self.mutables,
                 seed=self.seed
             )
-          
 
             # scores = [math.inf for s in range(len(configurations))]
             candidates = [None for c in range(len(configurations))]
@@ -139,12 +139,11 @@ class SuccessiveHalving():
                 results = [self.process_one(candidate=None, idx=idx, configuration=configuration, budget=budget)
                            for configuration in tqdm(configurations, total=len(configurations), desc=f'SH round {i}, Evaluating {len(configurations)} with budget of {budget}')]
 
-
                 scores = [r[0] for r in results]
                 candidates = [r[1] for r in results]
                 fronts = fast_non_dominated_sort.fast_non_dominated_sort(
                     np.array(scores))
-          
+
                 flattened = []
                 for front in fronts:
                     for v in front:
@@ -156,7 +155,6 @@ class SuccessiveHalving():
                 candidates = [candidates[j] for j in top_indices]
                 scores = [scores[j] for j in top_indices]
 
-                
             all_results.append(
                 (scores, configurations, candidates))
         return all_results

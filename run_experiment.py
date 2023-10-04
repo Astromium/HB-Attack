@@ -32,6 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('-pop_size', default=150)
     parser.add_argument('-configs_path', default=None)
     parser.add_argument('-scores_path', default=None)
+    parser.add_argument('-consistancy', default=True)
 
     args = parser.parse_args()
 
@@ -44,6 +45,7 @@ if __name__ == '__main__':
     pop_size = int(args.pop_size)
     configs_path = args.configs_path
     scores_path = args.scores_path
+    consistancy = True if args.consistancy == 'True' else False
 
     data_gen = DataGenerator()
     x, y, mutables, features_min_max, int_features, feature_names, constraints = data_gen.get_dataset(
@@ -61,7 +63,7 @@ if __name__ == '__main__':
         scaler = joblib.load(scaler_path)
         evaluator = URLEvaluator(constraints=constraints, scaler=scaler)
         tolerance = 0.0001
-        x, y = x[:50], y[:50]
+        # x, y = x[:-1], y[:-1]
     elif dataset == "botnet":
         scaler_path = "./ressources/custom_botnet_scaler.joblib"
         classifier_path = "./ressources/model_botnet.h5"
@@ -69,6 +71,9 @@ if __name__ == '__main__':
         evaluator = BotnetEvaluator(
             constraints=constraints, scaler=scaler, feature_names=feature_names)
         tolerance = 0.001
+        if consistancy:
+            with open('./constraints_list_botnet.pkl', 'rb') as f:
+                constraints_list = pickle.load(f)
     elif dataset == "lcld":
         scaler_path = "./ressources/lcld_preprocessor.joblib"
         classifier_path = "./ressources/custom_lcld_model.h5"
@@ -91,7 +96,7 @@ if __name__ == '__main__':
     dimensions = len(mutables)
     BATCH_SIZE = x.shape[0] if int(args.batch) == -1 else int(args.batch)
     seed = 202374
-    sampler = Sampler()
+    sampler = Sampler(consistancy=consistancy, constraints_list=constraints_list)
 
     if atk == 'hyperband':
         hb = Hyperband(objective=evaluator, classifier_path=classifier_path, x=x[:BATCH_SIZE], y=y[:BATCH_SIZE], sampler=sampler,
@@ -100,6 +105,8 @@ if __name__ == '__main__':
             scaler=scaler, dataset=dataset, mutables=mutables, features_min_max=features_min_max, int_features=int_features)
         
         np.save('./candidates.npy', np.array(candidates))
+
+        np.save('./candidates', np.array(candidates))
 
         with open('./configs', 'wb') as f:
             pickle.dump(configurations, f)
